@@ -2,261 +2,146 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Productivity Space</title>
-
+<title>Snake Xenzia</title>
 <style>
-:root{
-  --accent:#b39ddb;
-  --bg:#0f1020;
-  --card:#1e1f3aee;
-  --text:#ffffff;
-}
+  body {
+    margin: 0;
+    height: 100vh;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    color: white;
+  }
 
-body{
-  margin:0;
-  font-family:'Poppins',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  padding:30px;
-  overflow-x:hidden;
-}
+  .container {
+    text-align: center;
+  }
 
-h1{text-align:center;margin-bottom:15px;}
+  input, button {
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    margin: 5px;
+  }
 
-.container{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-  gap:25px;
-}
+  button {
+    background: #00ff99;
+    cursor: pointer;
+  }
 
-.card{
-  background:var(--card);
-  backdrop-filter:blur(14px);
-  border-radius:20px;
-  padding:20px;
-  box-shadow:0 0 40px rgba(179,157,219,.25);
-}
+  canvas {
+    background: black;
+    display: none;
+    border: 2px solid #00ff99;
+  }
 
-textarea,input{
-  width:100%;
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  margin-top:10px;
-}
-
-button{
-  width:100%;
-  padding:10px;
-  margin-top:10px;
-  border:none;
-  border-radius:12px;
-  background:var(--accent);
-  color:white;
-  cursor:pointer;
-}
-
-.note,li,.plan{
-  background:#2a2b55;
-  padding:8px;
-  border-radius:10px;
-  margin-bottom:8px;
-}
-
-/* Aurora */
-.aurora{
-  position:fixed;
-  top:-50%;
-  left:-50%;
-  width:200%;
-  height:200%;
-  background:radial-gradient(circle at 30% 30%,#7f7fd5,transparent 40%),
-             radial-gradient(circle at 70% 40%,#86a8e7,transparent 40%),
-             radial-gradient(circle at 50% 70%,#91eae4,transparent 40%);
-  animation:move 20s infinite alternate;
-  opacity:.25;
-  z-index:-2;
-}
-@keyframes move{
-  to{transform:translate(100px,100px);}
-}
-
-/* Snow */
-.snow{
-  position:fixed;
-  top:-10px;
-  color:white;
-  animation:fall linear infinite;
-}
-@keyframes fall{to{transform:translateY(110vh);}}
-
-/* Snake */
-canvas{
-  background:black;
-  border-radius:10px;
-}
+  #gameOver {
+    display: none;
+    font-size: 22px;
+    margin-top: 15px;
+    color: #ff6666;
+  }
 </style>
 </head>
 
 <body>
-
-<div class="aurora"></div>
-
-<h1 id="title">✨ Productivity Space ✨</h1>
-
-<div style="text-align:center;margin-bottom:15px">
-  🎨 Theme Color:
-  <input type="color" onchange="setAccent(this.value)">
-</div>
-
-<audio autoplay loop>
-  <source src="https://cdn.pixabay.com/audio/2023/03/14/audio_4c3a02b5d1.mp3">
-</audio>
-
 <div class="container">
+  <div id="nameScreen">
+    <h2>Enter Your Name 🐍</h2>
+    <input type="text" id="playerName" placeholder="Your name">
+    <br>
+    <button onclick="startGame()">Start Game</button>
+  </div>
 
-<div class="card">
-<h2>🗒️ Sticky Notes</h2>
-<div id="notes"></div>
-<textarea id="noteText"></textarea>
-<button onclick="addNote()">Add Note</button>
-</div>
+  <canvas id="game" width="400" height="400"></canvas>
 
-<div class="card">
-<h2>✅ To-Do</h2>
-<input id="todoInput">
-<button onclick="addTodo()">Add</button>
-<ul id="todoList"></ul>
-</div>
-
-<div class="card">
-<h2>📅 Planner</h2>
-<input id="timeInput" placeholder="Time">
-<input id="activityInput" placeholder="Activity">
-<button onclick="addPlan()">Add</button>
-<div id="plans"></div>
-</div>
-
-<div class="card">
-<h2>🎮 Snake Game</h2>
-<canvas id="game" width="200" height="200"></canvas>
-<p id="gameText"></p>
-</div>
-
+  <div id="gameOver"></div>
 </div>
 
 <script>
-/* NAME */
-let n=localStorage.name||prompt("What is your name?");
-localStorage.name=n;
-title.innerText=`✨ ${n}'s Productivity Space ✨`;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-/* THEME */
-function setAccent(c){
-  document.documentElement.style.setProperty("--accent",c);
-  localStorage.accent=c;
-}
-if(localStorage.accent)setAccent(localStorage.accent);
+let snake, food, dx, dy, score, name;
 
-/* NOTES */
-let notes=JSON.parse(localStorage.notes||"[]");
-function addNote(){
-  notes.push(noteText.value);
-  localStorage.notes=JSON.stringify(notes);
-  noteText.value="";
-  renderNotes();
-}
-function renderNotes(){
-  notesDiv.innerHTML="";
-  notes.forEach(n=>{
-    let d=document.createElement("div");
-    d.className="note";
-    d.innerText=n;
-    notesDiv.appendChild(d);
-  });
-}
-renderNotes();
+const box = 20;
 
-/* TODO */
-let todos=JSON.parse(localStorage.todos||"[]");
-function addTodo(){
-  todos.push(todoInput.value);
-  localStorage.todos=JSON.stringify(todos);
-  todoInput.value="";
-  renderTodos();
-}
-function renderTodos(){
-  todoList.innerHTML="";
-  todos.forEach(t=>{
-    let li=document.createElement("li");
-    li.innerText=t;
-    todoList.appendChild(li);
-  });
-}
-renderTodos();
-
-/* PLANNER */
-let plans=JSON.parse(localStorage.plans||"[]");
-function addPlan(){
-  plans.push(`${timeInput.value} – ${activityInput.value}`);
-  localStorage.plans=JSON.stringify(plans);
-  renderPlans();
-}
-function renderPlans(){
-  plansDiv.innerHTML="";
-  plans.forEach(p=>{
-    let d=document.createElement("div");
-    d.className="plan";
-    d.innerText=p;
-    plansDiv.appendChild(d);
-  });
-}
-renderPlans();
-
-/* SNOW */
-for(let i=0;i<30;i++){
-  let s=document.createElement("div");
-  s.className="snow";
-  s.innerText="❄";
-  s.style.left=Math.random()*100+"vw";
-  s.style.fontSize=10+Math.random()*20+"px";
-  s.style.animationDuration=5+Math.random()*5+"s";
-  document.body.appendChild(s);
-}
-
-/* SNAKE */
-const c=document.getElementById("game");
-const ctx=c.getContext("2d");
-let snake=[{x:100,y:100}],dx=20,dy=0,food={x:60,y:60};
-
-document.addEventListener("keydown",e=>{
-  if(e.key=="ArrowUp"){dx=0;dy=-20;}
-  if(e.key=="ArrowDown"){dx=0;dy=20;}
-  if(e.key=="ArrowLeft"){dx=-20;dy=0;}
-  if(e.key=="ArrowRight"){dx=20;dy=0;}
-});
-
-function game(){
-  let h={x:snake[0].x+dx,y:snake[0].y+dy};
-  if(h.x<0||h.y<0||h.x>=200||h.y>=200){
-    gameText.innerText="🐍 You are a snake";
+function startGame() {
+  name = document.getElementById("playerName").value.trim();
+  if (name === "") {
+    alert("Please enter your name");
     return;
   }
-  snake.unshift(h);
-  if(h.x==food.x&&h.y==food.y){
-    food={x:Math.floor(Math.random()*10)*20,y:Math.floor(Math.random()*10)*20};
-  }else snake.pop();
 
-  ctx.clearRect(0,0,200,200);
-  ctx.fillStyle="lime";
-  snake.forEach(p=>ctx.fillRect(p.x,p.y,18,18));
-  ctx.fillStyle="red";
-  ctx.fillRect(food.x,food.y,18,18);
+  document.getElementById("nameScreen").style.display = "none";
+  canvas.style.display = "block";
 
-  setTimeout(game,200);
+  snake = [{ x: 200, y: 200 }];
+  food = randomFood();
+  dx = box;
+  dy = 0;
+  score = 0;
+
+  document.getElementById("gameOver").style.display = "none";
+
+  document.addEventListener("keydown", changeDirection);
+  gameLoop = setInterval(draw, 120);
 }
-game();
-</script>
 
+function randomFood() {
+  return {
+    x: Math.floor(Math.random() * 20) * box,
+    y: Math.floor(Math.random() * 20) * box
+  };
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // draw food
+  ctx.fillStyle = "red";
+  ctx.fillRect(food.x, food.y, box, box);
+
+  // draw snake
+  ctx.fillStyle = "#00ff99";
+  snake.forEach(part => ctx.fillRect(part.x, part.y, box, box));
+
+  let head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+  // game over conditions
+  if (
+    head.x < 0 || head.y < 0 ||
+    head.x >= canvas.width || head.y >= canvas.height ||
+    snake.some(part => part.x === head.x && part.y === head.y)
+  ) {
+    clearInterval(gameLoop);
+    canvas.style.display = "none";
+    document.getElementById("gameOver").style.display = "block";
+    document.getElementById("gameOver").innerHTML =
+      `<b>${name}</b> is a snake in everyone’s life 🐍<br><br>
+       <button onclick="location.reload()">Play Again</button>`;
+    return;
+  }
+
+  snake.unshift(head);
+
+  if (head.x === food.x && head.y === food.y) {
+    food = randomFood();
+  } else {
+    snake.pop();
+  }
+}
+
+function changeDirection(e) {
+  if (e.key === "ArrowUp" && dy === 0) { dx = 0; dy = -box; }
+  if (e.key === "ArrowDown" && dy === 0) { dx = 0; dy = box; }
+  if (e.key === "ArrowLeft" && dx === 0) { dx = -box; dy = 0; }
+  if (e.key === "ArrowRight" && dx === 0) { dx = box; dy = 0; }
+}
+</script>
 </body>
 </html>
