@@ -24,15 +24,10 @@ body{
   min-height:100vh;
   padding:30px;
   color:var(--text);
-  transition:.3s;
+  overflow-x:hidden;
 }
 
-h1{text-align:center;margin-bottom:20px;}
-
-.toggle{
-  text-align:center;
-  margin-bottom:20px;
-}
+h1{text-align:center;}
 
 .container{
   display:grid;
@@ -48,15 +43,12 @@ h1{text-align:center;margin-bottom:20px;}
   box-shadow:0 10px 30px rgba(0,0,0,.15);
 }
 
-.card h2{text-align:center;}
-
 textarea,input{
   width:100%;
   border:none;
   border-radius:10px;
   padding:10px;
   margin-top:10px;
-  outline:none;
 }
 
 button{
@@ -70,33 +62,21 @@ button{
   cursor:pointer;
 }
 
-.note{
-  background:#fff9c4;
-  padding:10px;
-  border-radius:12px;
-  margin-bottom:10px;
-  cursor:grab;
+/* Snow */
+.snowflake{
+  position:fixed;
+  top:-10px;
+  color:white;
+  font-size:1em;
+  user-select:none;
+  animation: fall linear infinite;
 }
 
-ul{list-style:none;padding:0;}
-li{
-  background:#e1f5fe;
-  padding:8px;
-  border-radius:10px;
-  margin-bottom:8px;
-  display:flex;
-  gap:8px;
-  align-items:center;
+@keyframes fall{
+  to{
+    transform:translateY(110vh);
+  }
 }
-
-.planner-item{
-  background:#fce4ec;
-  padding:10px;
-  border-radius:10px;
-  margin-bottom:8px;
-}
-
-audio{display:none;}
 </style>
 </head>
 
@@ -104,34 +84,27 @@ audio{display:none;}
 
 <h1>🌸 Pastel Productivity Space 🌸</h1>
 
-<div class="toggle">
-  <button onclick="toggleDark()">🌙 Toggle Dark Mode</button>
-  <button onclick="toggleMusic()">🎵 Music</button>
-</div>
-
-<audio id="music" loop>
-  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_5c62a00d33.mp3">
+<!-- 🎵 BACKGROUND MUSIC -->
+<audio autoplay loop>
+  <source src="https://cdn.pixabay.com/audio/2023/03/14/audio_4c3a02b5d1.mp3">
 </audio>
 
 <div class="container">
 
-<!-- NOTES -->
 <div class="card">
 <h2>🗒️ Sticky Notes</h2>
 <div id="notes"></div>
-<textarea id="noteText" placeholder="Write a note..."></textarea>
+<textarea id="noteText" placeholder="Write something cute..."></textarea>
 <button onclick="addNote()">Add Note</button>
 </div>
 
-<!-- TODO -->
 <div class="card">
 <h2>✅ To-Do List</h2>
 <input id="todoInput" placeholder="New task...">
-<button onclick="addTodo()">Add Task</button>
+<button onclick="addTodo()">Add</button>
 <ul id="todoList"></ul>
 </div>
 
-<!-- PLANNER -->
 <div class="card">
 <h2>📅 Activity Planner</h2>
 <input id="timeInput" placeholder="Time">
@@ -143,99 +116,66 @@ audio{display:none;}
 </div>
 
 <script>
-/* DARK MODE */
-function toggleDark(){
-  document.body.classList.toggle("dark");
-  localStorage.dark = document.body.classList.contains("dark");
-}
-if(localStorage.dark==="true") toggleDark();
-
-/* MUSIC */
-let playing=false;
-function toggleMusic(){
-  const m=document.getElementById("music");
-  playing?m.pause():m.play();
-  playing=!playing;
-}
-
-/* NOTES */
-let notesData=JSON.parse(localStorage.notes||"[]");
-const notesDiv=document.getElementById("notes");
-
+/* Notes */
+let notes=JSON.parse(localStorage.notes||"[]");
 function renderNotes(){
   notesDiv.innerHTML="";
-  notesData.forEach((n,i)=>{
+  notes.forEach(n=>{
     const d=document.createElement("div");
-    d.className="note";
     d.textContent=n;
-    d.draggable=true;
-    d.ondragstart=e=>e.dataTransfer.setData("i",i);
-    d.ondblclick=()=>{notesData.splice(i,1);saveNotes();}
+    d.style.background="#fff9c4";
+    d.style.padding="10px";
+    d.style.borderRadius="12px";
+    d.style.marginBottom="8px";
     notesDiv.appendChild(d);
   });
 }
 function addNote(){
-  const t=noteText.value;
-  if(!t)return;
-  notesData.push(t);
-  saveNotes();
+  notes.push(noteText.value);
+  localStorage.notes=JSON.stringify(notes);
   noteText.value="";
-}
-function saveNotes(){
-  localStorage.notes=JSON.stringify(notesData);
   renderNotes();
 }
 renderNotes();
 
-/* TODO */
+/* Todo */
 let todos=JSON.parse(localStorage.todos||"[]");
 function renderTodos(){
   todoList.innerHTML="";
   todos.forEach(t=>{
     const li=document.createElement("li");
-    const c=document.createElement("input");
-    c.type="checkbox";
-    c.checked=t.done;
-    c.onchange=()=>{t.done=c.checked;saveTodos();}
-    li.appendChild(c);
-    li.append(t.text);
+    li.textContent=t;
     todoList.appendChild(li);
   });
 }
 function addTodo(){
-  if(!todoInput.value)return;
-  todos.push({text:todoInput.value,done:false});
-  todoInput.value="";
-  saveTodos();
-}
-function saveTodos(){
+  todos.push(todoInput.value);
   localStorage.todos=JSON.stringify(todos);
+  todoInput.value="";
   renderTodos();
 }
 renderTodos();
 
-/* PLANNER */
+/* Planner */
 let plans=JSON.parse(localStorage.plans||"[]");
-function renderPlans(){
-  planner.innerHTML="";
-  plans.forEach(p=>{
-    const d=document.createElement("div");
-    d.className="planner-item";
-    d.textContent=p;
-    planner.appendChild(d);
-  });
-}
 function addActivity(){
-  if(!timeInput.value||!activityInput.value)return;
-  plans.push(`${timeInput.value} – ${activityInput.value}`);
-  timeInput.value=activityInput.value="";
-  savePlans();
-}
-function savePlans(){
+  plans.push(`${timeInput.value} - ${activityInput.value}`);
   localStorage.plans=JSON.stringify(plans);
-  renderPlans();
+  planner.innerHTML+=`<div>${plans.at(-1)}</div>`;
+  timeInput.value=activityInput.value="";
 }
-renderPlans();
+
+/* ❄️ Snow Generator */
+for(let i=0;i<30;i++){
+  const snow=document.createElement("div");
+  snow.className="snowflake";
+  snow.textContent="❄";
+  snow.style.left=Math.random()*100+"vw";
+  snow.style.animationDuration=5+Math.random()*5+"s";
+  snow.style.opacity=Math.random();
+  snow.style.fontSize=10+Math.random()*20+"px";
+  document.body.appendChild(snow);
+}
 </script>
 
 </body>
