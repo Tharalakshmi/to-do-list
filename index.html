@@ -2,32 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pastel Planner</title>
+<title>Productivity Space</title>
 
 <style>
 :root{
-  --bg: linear-gradient(135deg,#e8f5e9,#fce4ec,#e3f2fd);
-  --card:#ffffffcc;
-  --text:#444;
-}
-
-.dark{
-  --bg: linear-gradient(135deg,#2e2e3a,#3a2e3a,#2e3a3a);
-  --card:#2f2f3fcc;
-  --text:#eee;
+  --accent:#b39ddb;
+  --bg:#0f1020;
+  --card:#1e1f3aee;
+  --text:#ffffff;
 }
 
 body{
   margin:0;
   font-family:'Poppins',sans-serif;
   background:var(--bg);
-  min-height:100vh;
-  padding:30px;
   color:var(--text);
+  padding:30px;
   overflow-x:hidden;
 }
 
-h1{text-align:center;}
+h1{text-align:center;margin-bottom:15px;}
 
 .container{
   display:grid;
@@ -37,54 +31,84 @@ h1{text-align:center;}
 
 .card{
   background:var(--card);
-  backdrop-filter:blur(12px);
+  backdrop-filter:blur(14px);
   border-radius:20px;
   padding:20px;
-  box-shadow:0 10px 30px rgba(0,0,0,.15);
+  box-shadow:0 0 40px rgba(179,157,219,.25);
 }
 
 textarea,input{
   width:100%;
+  padding:10px;
   border:none;
   border-radius:10px;
-  padding:10px;
   margin-top:10px;
 }
 
 button{
   width:100%;
+  padding:10px;
   margin-top:10px;
   border:none;
   border-radius:12px;
-  padding:10px;
-  background:#b39ddb;
+  background:var(--accent);
   color:white;
   cursor:pointer;
 }
 
+.note,li,.plan{
+  background:#2a2b55;
+  padding:8px;
+  border-radius:10px;
+  margin-bottom:8px;
+}
+
+/* Aurora */
+.aurora{
+  position:fixed;
+  top:-50%;
+  left:-50%;
+  width:200%;
+  height:200%;
+  background:radial-gradient(circle at 30% 30%,#7f7fd5,transparent 40%),
+             radial-gradient(circle at 70% 40%,#86a8e7,transparent 40%),
+             radial-gradient(circle at 50% 70%,#91eae4,transparent 40%);
+  animation:move 20s infinite alternate;
+  opacity:.25;
+  z-index:-2;
+}
+@keyframes move{
+  to{transform:translate(100px,100px);}
+}
+
 /* Snow */
-.snowflake{
+.snow{
   position:fixed;
   top:-10px;
   color:white;
-  font-size:1em;
-  user-select:none;
-  animation: fall linear infinite;
+  animation:fall linear infinite;
 }
+@keyframes fall{to{transform:translateY(110vh);}}
 
-@keyframes fall{
-  to{
-    transform:translateY(110vh);
-  }
+/* Snake */
+canvas{
+  background:black;
+  border-radius:10px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🌸 Pastel Productivity Space 🌸</h1>
+<div class="aurora"></div>
 
-<!-- 🎵 BACKGROUND MUSIC -->
+<h1 id="title">✨ Productivity Space ✨</h1>
+
+<div style="text-align:center;margin-bottom:15px">
+  🎨 Theme Color:
+  <input type="color" onchange="setAccent(this.value)">
+</div>
+
 <audio autoplay loop>
   <source src="https://cdn.pixabay.com/audio/2023/03/14/audio_4c3a02b5d1.mp3">
 </audio>
@@ -94,88 +118,144 @@ button{
 <div class="card">
 <h2>🗒️ Sticky Notes</h2>
 <div id="notes"></div>
-<textarea id="noteText" placeholder="Write something cute..."></textarea>
+<textarea id="noteText"></textarea>
 <button onclick="addNote()">Add Note</button>
 </div>
 
 <div class="card">
-<h2>✅ To-Do List</h2>
-<input id="todoInput" placeholder="New task...">
+<h2>✅ To-Do</h2>
+<input id="todoInput">
 <button onclick="addTodo()">Add</button>
 <ul id="todoList"></ul>
 </div>
 
 <div class="card">
-<h2>📅 Activity Planner</h2>
+<h2>📅 Planner</h2>
 <input id="timeInput" placeholder="Time">
 <input id="activityInput" placeholder="Activity">
-<button onclick="addActivity()">Add</button>
-<div id="planner"></div>
+<button onclick="addPlan()">Add</button>
+<div id="plans"></div>
+</div>
+
+<div class="card">
+<h2>🎮 Snake Game</h2>
+<canvas id="game" width="200" height="200"></canvas>
+<p id="gameText"></p>
 </div>
 
 </div>
 
 <script>
-/* Notes */
-let notes=JSON.parse(localStorage.notes||"[]");
-function renderNotes(){
-  notesDiv.innerHTML="";
-  notes.forEach(n=>{
-    const d=document.createElement("div");
-    d.textContent=n;
-    d.style.background="#fff9c4";
-    d.style.padding="10px";
-    d.style.borderRadius="12px";
-    d.style.marginBottom="8px";
-    notesDiv.appendChild(d);
-  });
+/* NAME */
+let n=localStorage.name||prompt("What is your name?");
+localStorage.name=n;
+title.innerText=`✨ ${n}'s Productivity Space ✨`;
+
+/* THEME */
+function setAccent(c){
+  document.documentElement.style.setProperty("--accent",c);
+  localStorage.accent=c;
 }
+if(localStorage.accent)setAccent(localStorage.accent);
+
+/* NOTES */
+let notes=JSON.parse(localStorage.notes||"[]");
 function addNote(){
   notes.push(noteText.value);
   localStorage.notes=JSON.stringify(notes);
   noteText.value="";
   renderNotes();
 }
-renderNotes();
-
-/* Todo */
-let todos=JSON.parse(localStorage.todos||"[]");
-function renderTodos(){
-  todoList.innerHTML="";
-  todos.forEach(t=>{
-    const li=document.createElement("li");
-    li.textContent=t;
-    todoList.appendChild(li);
+function renderNotes(){
+  notesDiv.innerHTML="";
+  notes.forEach(n=>{
+    let d=document.createElement("div");
+    d.className="note";
+    d.innerText=n;
+    notesDiv.appendChild(d);
   });
 }
+renderNotes();
+
+/* TODO */
+let todos=JSON.parse(localStorage.todos||"[]");
 function addTodo(){
   todos.push(todoInput.value);
   localStorage.todos=JSON.stringify(todos);
   todoInput.value="";
   renderTodos();
 }
+function renderTodos(){
+  todoList.innerHTML="";
+  todos.forEach(t=>{
+    let li=document.createElement("li");
+    li.innerText=t;
+    todoList.appendChild(li);
+  });
+}
 renderTodos();
 
-/* Planner */
+/* PLANNER */
 let plans=JSON.parse(localStorage.plans||"[]");
-function addActivity(){
-  plans.push(`${timeInput.value} - ${activityInput.value}`);
+function addPlan(){
+  plans.push(`${timeInput.value} – ${activityInput.value}`);
   localStorage.plans=JSON.stringify(plans);
-  planner.innerHTML+=`<div>${plans.at(-1)}</div>`;
-  timeInput.value=activityInput.value="";
+  renderPlans();
+}
+function renderPlans(){
+  plansDiv.innerHTML="";
+  plans.forEach(p=>{
+    let d=document.createElement("div");
+    d.className="plan";
+    d.innerText=p;
+    plansDiv.appendChild(d);
+  });
+}
+renderPlans();
+
+/* SNOW */
+for(let i=0;i<30;i++){
+  let s=document.createElement("div");
+  s.className="snow";
+  s.innerText="❄";
+  s.style.left=Math.random()*100+"vw";
+  s.style.fontSize=10+Math.random()*20+"px";
+  s.style.animationDuration=5+Math.random()*5+"s";
+  document.body.appendChild(s);
 }
 
-/* ❄️ Snow Generator */
-for(let i=0;i<30;i++){
-  const snow=document.createElement("div");
-  snow.className="snowflake";
-  snow.textContent="❄";
-  snow.style.left=Math.random()*100+"vw";
-  snow.style.animationDuration=5+Math.random()*5+"s";
-  snow.style.opacity=Math.random();
-  snow.style.fontSize=10+Math.random()*20+"px";
-  document.body.appendChild(snow);
+/* SNAKE */
+const c=document.getElementById("game");
+const ctx=c.getContext("2d");
+let snake=[{x:100,y:100}],dx=20,dy=0,food={x:60,y:60};
+
+document.addEventListener("keydown",e=>{
+  if(e.key=="ArrowUp"){dx=0;dy=-20;}
+  if(e.key=="ArrowDown"){dx=0;dy=20;}
+  if(e.key=="ArrowLeft"){dx=-20;dy=0;}
+  if(e.key=="ArrowRight"){dx=20;dy=0;}
+});
+
+function game(){
+  let h={x:snake[0].x+dx,y:snake[0].y+dy};
+  if(h.x<0||h.y<0||h.x>=200||h.y>=200){
+    gameText.innerText="🐍 You are a snake";
+    return;
+  }
+  snake.unshift(h);
+  if(h.x==food.x&&h.y==food.y){
+    food={x:Math.floor(Math.random()*10)*20,y:Math.floor(Math.random()*10)*20};
+  }else snake.pop();
+
+  ctx.clearRect(0,0,200,200);
+  ctx.fillStyle="lime";
+  snake.forEach(p=>ctx.fillRect(p.x,p.y,18,18));
+  ctx.fillStyle="red";
+  ctx.fillRect(food.x,food.y,18,18);
+
+  setTimeout(game,200);
 }
+game();
 </script>
 
 </body>
